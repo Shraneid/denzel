@@ -2,7 +2,7 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 const pLimit = require('p-limit');
 const pSettle = require('p-settle');
-const {IMDB_NAME_URL, IMDB_URL, P_LIMIT} = require('./constants');
+const { IMDB_NAME_URL, IMDB_URL, P_LIMIT } = require('./constants');
 
 /**
  * Get filmography for a given actor
@@ -10,23 +10,23 @@ const {IMDB_NAME_URL, IMDB_URL, P_LIMIT} = require('./constants');
  * @return {Array}
  */
 const getFilmography = async actor => {
-  try {
-    const response = await axios(`${IMDB_NAME_URL}/${actor}`);
-    const {data} = response;
-    const $ = cheerio.load(data);
+    try {
+        const response = await axios(`${IMDB_NAME_URL}/${actor}`);
+        const { data } = response;
+        const $ = cheerio.load(data);
 
-    return $('#filmo-head-actor + .filmo-category-section .filmo-row b a')
-      .map((i, element) => {
-        return {
-          'link': `${IMDB_URL}${$(element).attr('href')}`,
-          'title': $(element).text()
-        };
-      })
-      .get();
-  } catch (error) {
-    console.error(error);
-    return [];
-  }
+        return $('#filmo-head-actor + .filmo-category-section .filmo-row b a')
+            .map((i, element) => {
+                return {
+                    'link': `${IMDB_URL}${$(element).attr('href')}`,
+                    'title': $(element).text()
+                };
+            })
+            .get();
+    } catch (error) {
+        console.error(error);
+        return [];
+    }
 };
 
 /**
@@ -35,34 +35,34 @@ const getFilmography = async actor => {
  * @return {Object}
  */
 const getMovie = async link => {
-  try {
-    const response = await axios(link);
-    const {data} = response;
-    const $ = cheerio.load(data);
+    try {
+        const response = await axios(link);
+        const { data } = response;
+        const $ = cheerio.load(data);
 
-    return {
-      link,
-      'id': $('meta[property="pageId"]').attr('content'),
-      'metascore': Number($('.metacriticScore span').text()),
-      'poster': $('.poster img').attr('src'),
-      'rating': Number($('span[itemprop="ratingValue"]').text()),
-      'synopsis': $('.summary_text')
-        .text()
-        .trim(),
-      'title': $('.title_wrapper h1')
-        .text()
-        .trim(),
-      'votes': Number(
-        $('span[itemprop="ratingCount"]')
-          .text()
-          .replace(',', '.')
-      ),
-      'year': Number($('#titleYear a').text())
-    };
-  } catch (error) {
-    console.error(error);
-    return {};
-  }
+        return {
+            link,
+            'id': $('meta[property="pageId"]').attr('content'),
+            'metascore': Number($('.metacriticScore span').text()),
+            'poster': $('.poster img').attr('src'),
+            'rating': Number($('span[itemprop="ratingValue"]').text()),
+            'synopsis': $('.summary_text')
+                .text()
+                .trim(),
+            'title': $('.title_wrapper h1')
+                .text()
+                .trim(),
+            'votes': Number(
+                $('span[itemprop="ratingCount"]')
+                .text()
+                .replace(',', '.')
+            ),
+            'year': Number($('#titleYear a').text())
+        };
+    } catch (error) {
+        console.error(error);
+        return {};
+    }
 };
 
 /**
@@ -71,19 +71,19 @@ const getMovie = async link => {
  * @return {Array}
  */
 module.exports = async actor => {
-  const limit = pLimit(P_LIMIT);
-  const filmography = await getFilmography(actor);
+    const limit = pLimit(P_LIMIT);
+    const filmography = await getFilmography(actor);
 
-  const promises = filmography.map(filmo => {
-    return limit(async () => {
-      return await getMovie(filmo.link);
+    const promises = filmography.map(filmo => {
+        return limit(async() => {
+            return await getMovie(filmo.link);
+        });
     });
-  });
 
-  const results = await pSettle(promises);
-  const isFulfilled = results
-    .filter(result => result.isFulfilled)
-    .map(result => result.value);
+    const results = await pSettle(promises);
+    const isFulfilled = results
+        .filter(result => result.isFulfilled)
+        .map(result => result.value);
 
-  return [].concat.apply([], isFulfilled);
+    return [].concat.apply([], isFulfilled);
 };
