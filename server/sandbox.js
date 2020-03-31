@@ -5,47 +5,62 @@ const METASCORE = 77;
 const MongoClient = require('mongodb').MongoClient;
 
 const uri = "mongodb+srv://shrane:<Kunetin_1998>@cluster0-hp5sa.mongodb.net/test?retryWrites=true&w=majority";
-const client = new MongoClient(uri, { useNewUrlParser: true });
+const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+
+let movies = null;
+let promises = [];
 
 async function uploadData(tableName, objectsToInsert) {
-    client.connect(err => {
-        const collection = client.db("denzel").collection(tableName);
+    return new Promise((resolve, reject) => {
+        client.connect(err => {
+            if (err) reject(err);
+            const collection = client.db("denzel").collection("movies");
 
-        collection.drop();
+            collection.drop();
 
-        //let r = await collection.insertMany(objectsToInsert);
+            collection.insertMany(objectsToInsert, (err, res) => {
+                if (err) reject(err);
+            });
 
-        console.log("worked");
-        client.close();
+            console.log("worked");
+            client.close();
+            resolve();
+        });
     });
 }
 
 async function begin(actor = DENZEL_IMDB_ID, metascore = METASCORE) {
-    await start(actor, metascore);
+    movies = await start(actor, metascore);
+    promises.push(movies);
+    console.log(movies.allmovies.length);
+    console.log(movies.awesome.length);
 
     process.exit(0);
 }
 
 async function start(actor = DENZEL_IMDB_ID, metascore = METASCORE) {
+    let allmovies = null;
+    let awesome = null;
     try {
         console.log(`📽️  fetching filmography of ${actor}...`);
-        const movies = await imdb(actor);
-        const awesome = movies.filter(movie => movie.metascore >= metascore);
+        allmovies = await imdb(actor);
+        awesome = allmovies.filter(movie => movie.metascore >= metascore);
 
-        console.log(`🍿 ${movies.length} movies found.`);
+        /*console.log(`🍿 ${movies.length} movies found.`);
         console.log(JSON.stringify(movies, null, 2));
         console.log(`🥇 ${awesome.length} awesome movies found.`);
         console.log(JSON.stringify(awesome, null, 2));
-
-        await uploadData("movies", movies);
-        await uploadData("awesome", awesome);
-
+        */
+        promises.push(await uploadData("movies", allmovies));
+        promises.push(await uploadData("awesome", awesome));
     } catch (e) {
         console.error(e);
         process.exit(1);
     }
+    return { allmovies, awesome }
 }
 
 const [, , id, metascore] = process.argv;
 
 begin(id, metascore);
+
