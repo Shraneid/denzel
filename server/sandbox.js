@@ -4,13 +4,14 @@ const DENZEL_IMDB_ID = 'nm0000243';
 const METASCORE = 77;
 const MongoClient = require('mongodb').MongoClient;
 
-const uri = "mongodb+srv://shrane:<Kunetin_1998>@cluster0-hp5sa.mongodb.net/test?retryWrites=true&w=majority";
+const uri = "mongodb+srv://shrane:<testpwd>@cluster0-hp5sa.mongodb.net/test?retryWrites=true&w=majority";
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
 
 let movies = null;
 let promises = [];
 
 async function uploadData(tableName, objectsToInsert) {
+    console.log("connecting");
     return new Promise((resolve, reject) => {
         client.connect(err => {
             if (err) reject(err);
