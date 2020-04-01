@@ -81,7 +81,6 @@ const fetchMovieFromId = movieId => {
 };
 
 const fetchMovieFromSearch = (limit, metascore) => {
-    console.log("object");
     return new Promise((resolve, reject) => {
         client.connect(err => {
             if (err) return reject({ message: err });
@@ -101,10 +100,29 @@ const fetchMovieFromSearch = (limit, metascore) => {
     });
 };
 
+const uploadReview = (id, date, review) => {
+    client.connect(function (err) {
+        assert.equal(null, err);
+        console.log("Connected successfully to server");
+
+        const db = client.db("denzel");
+
+        console.log("date = " + date);
+        console.log("review = " + review);
+
+        let dataToInsert = [{ id, date, review }];
+
+        insertDocuments(db, dataToInsert, "reviews", function () {
+            client.close();
+        });
+    });
+};
+
 module.exports = {
     insertDocuments,
     insert,
     fetchMovie,
     fetchMovieFromId,
-    fetchMovieFromSearch
+    fetchMovieFromSearch,
+    uploadReview
 };
